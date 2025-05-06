@@ -1,0 +1,26 @@
+# Entornos de desarrollo
+.idea/
+.vscode/
+*.iml
+
+# Build de Maven
+target/
+
+# Archivos temporales
+*.log
+*.tmp
+
+# Dependencias
+lib/
+
+# Configuraciones específicas del proyecto
+.env
+*.properties
+
+# Sistema operativo
+.DS_Store
+
+# Salidas ejecutables
+*.jar
+*.war
+*.ear
