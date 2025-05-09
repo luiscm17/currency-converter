@@ -1,29 +1,55 @@
 package com.luiscm.currencyexchange.service;
 
-import com.luiscm.currencyexchange.client.ApiClient;
+import com.luiscm.currencyexchange.provider.RateProvider;
+import com.luiscm.currencyexchange.provider.CurrencyListProvider;
+import com.luiscm.currencyexchange.constants.ErrorMessages;
+import com.luiscm.currencyexchange.exception.DataProviderException;
+import com.luiscm.currencyexchange.exception.InvalidCurrencyException;
 import com.luiscm.currencyexchange.model.ExchangeRate;
-import java.io.IOException;
+
+import java.util.Map;
+
+
 
 public class CurrencyService {
-    
-    public static ExchangeRate getExchangeRates(String baseCurrency) throws IOException, InterruptedException {
-        return ApiClient.fetchExchangeRates(baseCurrency);
+    private final RateProvider rateProvider;
+    private final CurrencyListProvider listProvider;
+
+    public CurrencyService(RateProvider rateProvider, CurrencyListProvider listProvider) {
+        this.rateProvider = rateProvider;
+        this.listProvider = listProvider;
+    }
+    public ExchangeRate getExchangeRate(String baseCurrency) throws InvalidCurrencyException, DataProviderException {
+        if (!isValidCurrency(baseCurrency)) {
+            throw new InvalidCurrencyException(ErrorMessages.UNSUPPORTED_CURRENCY);
+        }
+        return rateProvider.getExchangeRates(baseCurrency);
     }
 
-    public static double convertCurrency(double amount, String baseCurrency, String targetCurrency) 
-        throws IOException, InterruptedException, IllegalArgumentException {
-        
-        if (amount <= 0) {
-            throw new IllegalArgumentException("El monto debe ser mayor a cero");
+    public Map<String, String> getAvailableCurrencies() throws DataProviderException {
+        return listProvider.getAvailableCurrencies();
+    }
+
+    private boolean isValidCurrency(String currencyCode) {
+        try {
+            return listProvider.getAvailableCurrencies().containsKey(currencyCode);
+        } catch (DataProviderException e) {
+            return false;
         }
+    }
+
+    public double convertCurrency(double amount, String fromCurrency, String toCurrency)
+        throws InvalidCurrencyException, DataProviderException {
+        fromCurrency = fromCurrency.toUpperCase();
+        toCurrency = toCurrency.toUpperCase();
+        CurrencyValidator.validateCurrencyCode(fromCurrency);
+        CurrencyValidator.validateCurrencyCode(toCurrency);
         
-        ExchangeRate rates = getExchangeRates(baseCurrency);
-        Double rate = rates.getConversionRates().get(targetCurrency);
+        ExchangeRate exchangeRate = rateProvider.getExchangeRates(fromCurrency);
+        CurrencyValidator.validateTargetCurrency(exchangeRate, toCurrency);
         
-        if (rate == null) {
-            throw new IllegalArgumentException("Moneda destino no válida: " + targetCurrency);
-        }
-        
-        return amount * rate;
+        return amount * exchangeRate.getRates().get(toCurrency);
     }
 }
+
+// Nueva interfaz para futuras extensiones

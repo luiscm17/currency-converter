@@ -16,11 +16,6 @@
 ✅ Manejo centralizado de credenciales (API_KEY)
 ✅ Validación de datos en modelos
 
-## Próximos Pasos
-1. Implementar patrón Repository para acceso a datos
-2. Añadir manejo de errores personalizados
-3. Crear tests unitarios para cada capa
-
 src/
 └── main/
     └── java/
@@ -43,12 +38,43 @@ src/
 4. App.java : Coordinaría la inicialización e interacción entre componentes
 
 
+## Documentación Arquitectónica Detallada
+
+### Capas y Componentes
+1. **Capa Client (Cliente)**
+   - Responsabilidad: Comunicación con APIs externas
+   - Clases principales:
+     - `ExchangeRateClient`: Maneja solicitudes HTTP a la API de tasas
+     - `ApiClient`: Clase base para configuración de conexiones
+   - Tecnologías: Retrofit/OkHttp, Gson
+
+2. **Capa Service (Servicio)**
+   - Responsabilidad: Lógica de negocio y coordinación
+   - Clases principales:
+     - `CurrencyConverter`: Orquesta el proceso de conversión
+     - `ConversionHistoryService`: Gestiona el historial
+     - `CurrencyValidator`: Validación de códigos ISO
+
+3. **Capa Model (Modelos)**
+   - Responsabilidad: Representación de datos
+   - Clases principales:
+     - `ExchangeRateResponse`: DTO para respuesta API
+     - `InvalidCurrencyException`: Error personalizado
+
+### Flujo de Interacción
+```
+[Usuario] -> [CLIHandler] -> [CurrencyConverter] -> [ExchangeRateClient]
+       ^               |
+       |               v
+       +-- [Historial] <-- [ConversionHistoryService]
+```
+
 ## Checklist de funcionalidades principales:
 
 1. [x] Consumo de API de tasas de cambio (ya implementado parcialmente)
 2. [x] Conversión entre monedas (implementado en CurrencyConverter)
-3. [ ] Validación de códigos ISO (CurrencyValidator)
-4. [ ] Validación de entradas en servicio (CurrencyConverter)
-5. [ ] Manejo de errores personalizados (InvalidCurrencyException)
-6. [ ] Historial de conversiones (ConversionHistoryService)
+3. [x] Validación de códigos ISO (CurrencyValidator)
+4. [x] Validación de entradas en servicio (CurrencyConverter)
+5. [x] Manejo de errores personalizados (InvalidCurrencyException)
+6. [x] Historial de conversiones (ConversionHistoryService)
 7. [x] Interfaz de usuario básica (CLI) - Implementada (clase CLIHandler en funcionamiento)

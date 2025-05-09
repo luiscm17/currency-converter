@@ -5,32 +5,38 @@ import java.util.Map;
 import com.google.gson.annotations.SerializedName;
 
 public class ExchangeRate {
-    @SerializedName("result")
-    private String result;
-    
-    @SerializedName("time_last_update_utc")
-    private String timeLastUpdateUtc;
         
-    @SerializedName("base_code")
-    private String baseCode;
-    
-    @SerializedName("conversion_rates")
-    private Map<String, Double> conversionRates;
 
-    // Getters y Setters
-    public String getBaseCode() {
-        return baseCode;
+    @SerializedName("base")
+    private String base;
+
+    @SerializedName("rates")
+    private Map<String, Double> rates;
+
+
+    public String getBase() {
+        return base;
     }
 
-    public void setBaseCode(String baseCode) {
-        this.baseCode = baseCode;
+    public void setBase(String base) {
+        this.base = base;
     }
 
-    public Map<String, Double> getConversionRates() {
-        return conversionRates;
+    public Map<String, Double> getRates() {
+        return rates;
     }
 
-    public void setConversionRates(Map<String, Double> conversionRates) {
-        this.conversionRates = conversionRates;
+    public void setRates(Map<String, Double> rates) {
+        this.rates = rates;
+    }
+
+    private String date;
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
     }
 }

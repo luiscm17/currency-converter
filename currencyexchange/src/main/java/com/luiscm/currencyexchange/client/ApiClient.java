@@ -6,43 +6,61 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Properties;
 
-import com.google.gson.Gson;
-import com.luiscm.currencyexchange.model.ExchangeRate;
+import com.luiscm.currencyexchange.config.Config;
+import com.luiscm.currencyexchange.config.UrlBuilder;
+import com.luiscm.currencyexchange.exception.ApiClientException;
 
+// Versión simplificada del ApiClient
 public class ApiClient {
-    private static final HttpClient httpClient = HttpClient.newHttpClient();
-    private static String API_KEY;
-    private static String API_URL;
+    // Métodos principales
+    public static String fetchSupportedCurrencies() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+            .GET()
+            .header("Authorization", "Bearer " + API_KEY)
+            .uri(Config.getApiURL())
+            .build();
 
-    static {
-        try {
-            Properties prop = new Properties();
-            prop.load(ApiClient.class.getResourceAsStream("/config.properties"));
-            API_KEY = prop.getProperty("api.key");
-            API_URL = prop.getProperty("api.url");
-        } catch (IOException e) {
-            throw new RuntimeException("Error loading configuration", e);
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new ApiClientException("Error API: " + response.statusCode());
         }
+        return response.body();
     }
+    // Eliminar método buildExchangeRateUrl
+    private static final HttpClient httpClient = HttpClient.newHttpClient();
+    private static final String API_KEY = Config.API_KEY;
     
-    public static ExchangeRate fetchExchangeRates(String baseCurrency) throws IOException, InterruptedException {
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL + API_KEY + "/latest/" + baseCurrency))
-                .build();
+    public static String fetchLatestRates(String baseCurrency) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+            .GET()
+            .header("Authorization", "Bearer " + API_KEY)
+            .uri(URI.create(Config.getApiURL() + "?base=" + baseCurrency))
+            .build();
 
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new ApiClientException("Error API: " + response.statusCode());
+        }
+        return response.body();
+    }
+    public static String fetchExchangeRates(String baseCurrency) {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(UrlBuilder.buildExchangeRateUrl(baseCurrency)))
+            .build();
+
+        try {
             HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
             
             if(response.statusCode() != 200) {
-                throw new IOException("Error en la API: Código " + response.statusCode());
+                throw new ApiClientException("Error API - Código: " + response.statusCode() + " | Respuesta: " + response.body().substring(0, 100), null);
             }
             
-            Gson gson = new Gson();
-            return gson.fromJson(response.body(), ExchangeRate.class);
-        } catch (Exception e) {
-            throw new IOException("Error al obtener tasas de cambio: " + e.getMessage());
+            return response.body();
+        } catch (IOException | InterruptedException e) {
+            throw new ApiClientException("Error de comunicación con la API", e);
         }
     }
 }

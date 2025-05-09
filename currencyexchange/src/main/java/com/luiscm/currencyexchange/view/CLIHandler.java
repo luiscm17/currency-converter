@@ -1,46 +1,68 @@
 package com.luiscm.currencyexchange.view;
 
-import com.luiscm.currencyexchange.service.CurrencyService;
+import java.io.IOException;
 
-import java.util.Scanner;
+import com.luiscm.currencyexchange.exception.DataProviderException;
+import com.luiscm.currencyexchange.exception.InvalidCurrencyException;
+import com.luiscm.currencyexchange.model.ConversionRecord;
+import com.luiscm.currencyexchange.interfaces.CurrencyConverterInterface;
+import com.luiscm.currencyexchange.core.HistoryService;
+import com.luiscm.currencyexchange.interfaces.IOHandlerInterface;
 
 public class CLIHandler {
-    private final Scanner scanner;
+    private final CurrencyConverterInterface currencyConverter;
+    private final HistoryService historyService;
+    private final IOHandlerInterface ioHandler;
 
-    public CLIHandler() {
-        this.scanner = new Scanner(System.in);
+    public CLIHandler(CurrencyConverterInterface converter,
+            HistoryService historyService,
+            IOHandlerInterface ioHandler) {
+        this.currencyConverter = converter;
+        this.historyService = historyService;
+        this.ioHandler = ioHandler;
     }
 
-    public void start() {
-        mostrarBienvenida();
-        
-        String monedaOrigen = leerMoneda("Ingrese moneda base (ej. USD): ");
-        String monedaDestino = leerMoneda("Ingrese moneda objetivo (ej. EUR): ");
-        double monto = leerMonto("Ingrese monto a convertir: ");
-        
+    private void realizarConversion() throws InterruptedException, IOException {
         try {
-            double resultado = CurrencyService.convertCurrency(monto, monedaOrigen, monedaDestino);
-            mostrarResultado(resultado);
-        } catch (Exception e) {
-            System.out.println("\nError: " + e.getMessage());
+            String monedaOrigen = ioHandler.readCurrency("Moneda origen (ej. USD): ");
+            String monedaDestino = ioHandler.readCurrency("Moneda destino (ej. EUR): ");
+            double monto = ioHandler.readAmount("Monto a convertir: ");
+
+            double resultado = currencyConverter.convert(monto, monedaOrigen, monedaDestino);
+            historyService.addConversion(new ConversionRecord(monto, monedaOrigen, monedaDestino, resultado));
+            ioHandler.showResult(monedaOrigen, monedaDestino, monto, resultado);
+        } catch (InvalidCurrencyException | DataProviderException e) {
+            ioHandler.showError(e);
         }
     }
 
-    private void mostrarBienvenida() {
-        System.out.println("*** Sistema de Conversión de Divisas ***");
-    }
+    public void start() throws InterruptedException, IOException {
+        boolean ejecutando = true;
+        while (ejecutando) {
+            ioHandler.showMenu();
+            String opcion = ioHandler.readInput("Seleccione una opción: ");
 
-    private String leerMoneda(String mensaje) {
-        System.out.print(mensaje);
-        return scanner.nextLine().toUpperCase();
-    }
-
-    private double leerMonto(String mensaje) {
-        System.out.print(mensaje);
-        return Double.parseDouble(scanner.nextLine());
-    }
-
-    private void mostrarResultado(double resultado) {
-        System.out.printf("\nResultado de la conversión: %.2f\n\n", resultado);
+            switch (opcion) {
+                case "1":
+                    realizarConversion();
+                    break;
+                case "2":
+                    historyService.showHistory(ioHandler);
+                    break;
+                case "3":
+                    try {
+                        currencyConverter.showAvailableCurrencies(ioHandler);
+                    } catch (DataProviderException e) {
+                        ioHandler.showError(e);
+                    }
+                    break;
+                case "4":
+                    ejecutando = false;
+                    ioHandler.showMessage("Saliendo del sistema...");
+                    break;
+                default:
+                    ioHandler.showError("Opción no válida");
+            }
+        }
     }
 }
