@@ -1,55 +1,56 @@
 package com.luiscm.currencyexchange.service;
 
-import com.luiscm.currencyexchange.provider.RateProvider;
-import com.luiscm.currencyexchange.provider.CurrencyListProvider;
-import com.luiscm.currencyexchange.constants.ErrorMessages;
-import com.luiscm.currencyexchange.exception.DataProviderException;
-import com.luiscm.currencyexchange.exception.InvalidCurrencyException;
+import java.util.List;
+
+import com.luiscm.currencyexchange.client.ExchangeRateProvider;
 import com.luiscm.currencyexchange.model.ExchangeRate;
-
-import java.util.Map;
-
-
+import com.luiscm.currencyexchange.util.ConfigLoader;
+import com.luiscm.currencyexchange.util.CurrencyValidator;
 
 public class CurrencyService {
-    private final RateProvider rateProvider;
-    private final CurrencyListProvider listProvider;
+    private final ExchangeRateProvider rateProvider;
+    private final CurrencyValidator validator;
 
-    public CurrencyService(RateProvider rateProvider, CurrencyListProvider listProvider) {
+    public CurrencyService(ExchangeRateProvider rateProvider, CurrencyValidator validator) {
         this.rateProvider = rateProvider;
-        this.listProvider = listProvider;
+        this.validator = validator;
     }
-    public ExchangeRate getExchangeRate(String baseCurrency) throws InvalidCurrencyException, DataProviderException {
-        if (!isValidCurrency(baseCurrency)) {
-            throw new InvalidCurrencyException(ErrorMessages.UNSUPPORTED_CURRENCY);
+
+    // Método plantilla
+    public final double convertCurrency(double amount, String baseCurrency, String targetCurrency) throws Exception {
+        validator.validate(baseCurrency);
+        validator.validate(targetCurrency);
+        validateInput(amount);
+        ExchangeRate rates = fetchExchangeRates(baseCurrency);
+        validateTargetCurrency(rates, targetCurrency);
+        return calculateConversion(amount, rates.getConversionRates().get(targetCurrency));
+    }
+
+    protected void validateInput(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("El monto debe ser mayor que cero");
         }
+    }
+
+    protected ExchangeRate fetchExchangeRates(String baseCurrency) throws Exception {
+        return getExchangeRates(baseCurrency);
+    }
+
+    protected void validateTargetCurrency(ExchangeRate rates, String targetCurrency) {
+        if (!rates.getConversionRates().containsKey(targetCurrency)) {
+            throw new IllegalArgumentException("Divisa objetivo no soportada: " + targetCurrency);
+        }
+    }
+
+    protected double calculateConversion(double amount, double rate) {
+        return amount * rate;
+    }
+
+    protected ExchangeRate getExchangeRates(String baseCurrency) throws Exception {
         return rateProvider.getExchangeRates(baseCurrency);
     }
 
-    public Map<String, String> getAvailableCurrencies() throws DataProviderException {
-        return listProvider.getAvailableCurrencies();
-    }
-
-    private boolean isValidCurrency(String currencyCode) {
-        try {
-            return listProvider.getAvailableCurrencies().containsKey(currencyCode);
-        } catch (DataProviderException e) {
-            return false;
-        }
-    }
-
-    public double convertCurrency(double amount, String fromCurrency, String toCurrency)
-        throws InvalidCurrencyException, DataProviderException {
-        fromCurrency = fromCurrency.toUpperCase();
-        toCurrency = toCurrency.toUpperCase();
-        CurrencyValidator.validateCurrencyCode(fromCurrency);
-        CurrencyValidator.validateCurrencyCode(toCurrency);
-        
-        ExchangeRate exchangeRate = rateProvider.getExchangeRates(fromCurrency);
-        CurrencyValidator.validateTargetCurrency(exchangeRate, toCurrency);
-        
-        return amount * exchangeRate.getRates().get(toCurrency);
+    public List<String> getSupportedCurrencies() {
+        return ConfigLoader.getSupportedCurrencies();
     }
 }
-
-// Nueva interfaz para futuras extensiones

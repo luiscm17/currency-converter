@@ -1,0 +1,17 @@
+{
+    "result": "success",
+    "documentation": "https://www.exchangerate-api.com/docs",
+    "terms_of_use": "https://www.exchangerate-api.com/terms",
+    "supported_codes": [
+        ["EUR", "Euro"],
+        ["USD", "Dólar estadounidense"],
+        ["JPY", "Yen japonés"],
+        ["GBP", "Libra esterlina"],
+        ["CHF", "Franco suizo"],
+        ["RUB", "Rublo ruso"],
+        ["CNY", "Yuan chino"],
+        ["ARS", "Peso argentino"],
+        ["BOB", "Boliviano"],
+        ["CLP", "Peso chileno"]
+    ]
+}

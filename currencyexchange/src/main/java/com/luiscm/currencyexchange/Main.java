@@ -1,26 +1,21 @@
 package com.luiscm.currencyexchange;
 
-import com.luiscm.currencyexchange.view.CLIHandler;
-import com.luiscm.currencyexchange.service.CurrencyConverter;
+import com.luiscm.currencyexchange.client.ApiClient;
+import com.luiscm.currencyexchange.exception.ConfigLoadException;
 import com.luiscm.currencyexchange.service.CurrencyService;
-import com.luiscm.currencyexchange.config.AppConfig;
-import com.luiscm.currencyexchange.core.HistoryService;
-import com.luiscm.currencyexchange.interfaces.IOHandlerInterface;
+import com.luiscm.currencyexchange.util.CurrencyValidator;
+import com.luiscm.currencyexchange.view.CLIHandler;
+import com.luiscm.currencyexchange.service.ConversionHistoryService;
 
 public class Main {
     public static void main(String[] args) {
+        ApiClient apiClient = new ApiClient();
+        CurrencyService currencyService = new CurrencyService(apiClient, new CurrencyValidator());
         try {
-            CurrencyService currencyService = AppConfig.currencyService();
-            HistoryService historyService = AppConfig.historyService();
-            IOHandlerInterface ioHandler = AppConfig.ioHandler();
-            
-            new CLIHandler(
-                new CurrencyConverter(currencyService),
-                historyService,
-                ioHandler
-            ).start();
-        } catch (Exception e) {
-            System.err.println("Error crítico: " + e.getMessage());
+            ConversionHistoryService historyService = new ConversionHistoryService();
+            new CLIHandler(currencyService, historyService).start();
+        } catch (ConfigLoadException e) {
+            System.err.println("Error cargando configuración: " + e.getMessage());
             System.exit(1);
         }
     }

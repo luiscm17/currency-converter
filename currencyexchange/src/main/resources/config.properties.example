@@ -1,0 +1,5 @@
+api.key=TU_CLAVE_AQUI
+api.url=URL_BASE_AQUI
+
+# Ejemplo de formato completo:
+# api.url=https://v6.exchangerate-api.com/v6/
